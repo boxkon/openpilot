@@ -53,7 +53,10 @@ class CarController:
     self.car_fingerprint = CP.carFingerprint
     self.last_button_frame = 0
 
-  def update(self, CC, CS):
+    #boxkon
+    self.mad_mode_enabled = Params().get_bool('MadModeEnabled')
+
+  def update(self, CC, CS, frame, pcm_cancel_cmd):
     actuators = CC.actuators
     hud_control = CC.hudControl
 
@@ -158,6 +161,11 @@ class CarController:
             # send 25 messages at a time to increases the likelihood of resume being accepted
             can_sends.extend([hyundaican.create_clu11(self.packer, self.frame, CS.clu11, Buttons.RES_ACCEL, self.CP.carFingerprint)] * 25)
             self.last_button_frame = self.frame
+
+      if pcm_cancel_cmd and (self.longcontrol and not self.mad_mode_enabled):
+        can_sends.append(hyundaican.create_clu11(self.packer, frame % 0x10, CS.scc_bus, CS.clu11, Buttons.CANCEL))
+      else:
+        can_sends.append(hyundaican.create_mdps12(self.packer, frame, CS.mdps12))
 
       if self.frame % 2 == 0 and self.CP.openpilotLongitudinalControl:
         # TODO: unclear if this is needed
